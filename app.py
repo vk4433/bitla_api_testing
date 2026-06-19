@@ -129,7 +129,7 @@ if run:
                 "seat_number":    seats_list[i],
                 "fare":           fares_list[i],
                 "title":          "Mrs" if is_female else "Mr",
-                "name":           "Greeshma" if is_female else "Ravi",
+                "name":           "Greeshma" if is_female else "vinod",
                 "age":            "23",
                 "sex":            "F" if is_female else "M",
                 "is_primary":     "true" if i == 0 else "false",
