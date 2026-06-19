@@ -208,3 +208,80 @@ if run:
     with col3:
         st.subheader("3. Confirm Booking")
         st.json(conf_json)
+
+# ── Cancellation ──────────────────────────────────────────────────────────────
+st.divider()
+st.subheader("Cancellation")
+
+for _k in ("can_cancel_result", "cancel_booking_result", "cancel_ticket_number", "cancel_seat_numbers"):
+    if _k not in st.session_state:
+        st.session_state[_k] = None
+
+cc1, cc2 = st.columns(2)
+cancel_ticket    = cc1.text_input("Ticket Number", placeholder="e.g. TS260620002645407529FFVC")
+cancel_seats_raw = cc2.text_input("Seat Numbers (comma-separated)", placeholder="e.g. 16,17")
+
+if st.button("Check Cancellation"):
+    if not cancel_ticket.strip() or not cancel_seats_raw.strip():
+        st.error("Ticket Number and Seat Numbers are required.")
+    else:
+        st.session_state.cancel_ticket_number  = cancel_ticket.strip()
+        st.session_state.cancel_seat_numbers   = cancel_seats_raw.strip()
+        st.session_state.cancel_booking_result = None
+        with st.spinner("Checking..."):
+            resp = requests.get(
+                f"{BASE_URL}/can_cancel.json",
+                params={
+                    "ticket_number": cancel_ticket.strip(),
+                    "seat_numbers":  cancel_seats_raw.strip(),
+                    "api_key":       api_key,
+                },
+                timeout=15,
+            )
+        st.session_state.can_cancel_result = resp.json()
+
+if st.session_state.cancel_booking_result:
+    cancel_result  = st.session_state.cancel_booking_result
+    cancel_detail  = cancel_result.get("result", {}).get("cancel_ticket", {})
+    if cancel_detail:
+        st.success(
+            f"Cancelled! Refund: ₹{cancel_detail.get('refund_amount', 'N/A')} | "
+            f"Charges: ₹{cancel_detail.get('cancellation_charges', 'N/A')}"
+        )
+    st.json(cancel_result)
+
+elif st.session_state.can_cancel_result:
+    result = st.session_state.can_cancel_result
+    info   = result.get("result", {}).get("is_ticket_cancellable", {})
+
+    if info.get("is_cancellable"):
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Cancel Charge %",      f"{info['cancel_percent']}%")
+        m2.metric("Refund Amount",        f"₹{info['refund_amount']}")
+        m3.metric("Cancellation Charges", f"₹{info['cancellation_charges']}")
+
+        st.warning("Do you want to proceed with cancellation?")
+        yes_col, no_col, _ = st.columns([1, 1, 8])
+
+        if yes_col.button("Yes, Cancel", type="primary"):
+            with st.spinner("Cancelling..."):
+                cancel_resp = requests.get(
+                    f"{BASE_URL}/cancel_booking.json",
+                    params={
+                        "ticket_number": st.session_state.cancel_ticket_number,
+                        "seat_numbers":  st.session_state.cancel_seat_numbers,
+                        "api_key":       api_key,
+                    },
+                    timeout=15,
+                )
+            st.session_state.cancel_booking_result = cancel_resp.json()
+            st.session_state.can_cancel_result     = None
+            st.rerun()
+
+        if no_col.button("No, Keep"):
+            st.session_state.can_cancel_result = None
+            st.rerun()
+    else:
+        st.error("This ticket is not cancellable.")
+        with st.expander("API Response"):
+            st.json(result)
