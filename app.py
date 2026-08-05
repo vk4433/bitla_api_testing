@@ -162,7 +162,7 @@ with tab_book:
                     "seat_number":    seats_list[i],
                     "fare":           fares_list[i],
                     "title":          "Mrs" if is_female else "Mr",
-                    "name":           "Greeshma" if is_female else "vinod",
+                    "name":           "sruthi" if is_female else "santhosh",
                     "age":            "23",
                     "sex":            "F" if is_female else "M",
                     "is_primary":     "true" if i == 0 else "false",
