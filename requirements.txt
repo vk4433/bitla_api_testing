@@ -1,2 +1,2 @@
-streamlit
+streamlit==1.61.0
 ipykernel
